@@ -13,6 +13,7 @@ function YouTubeIcon() {
 export default function UrlInput({ onAnalyze }) {
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
+  const [step, setStep] = useState('')
   const [error, setError] = useState('')
 
   async function handleSubmit(e) {
@@ -20,11 +21,13 @@ export default function UrlInput({ onAnalyze }) {
     const trimmed = url.trim()
     if (!trimmed) return
     setError('')
+    setStep('Starting...')
     setLoading(true)
     try {
-      await onAnalyze(trimmed)
+      await onAnalyze(trimmed, (currentStep) => setStep(currentStep))
     } catch (err) {
       setError(err.message || 'Something went wrong')
+      setStep('')
     } finally {
       setLoading(false)
     }
@@ -36,22 +39,24 @@ export default function UrlInput({ onAnalyze }) {
         display: 'flex',
         alignItems: 'center',
         background: '#1c1c1c',
-        border: '1px solid var(--border)',
+        border: `1px solid ${loading ? 'var(--orange)' : 'var(--border)'}`,
         borderRadius: '50px',
         padding: '6px 6px 6px 16px',
         gap: '10px',
+        transition: 'border-color 0.2s',
       }}>
         <YouTubeIcon />
         <input
           value={url}
           onChange={e => setUrl(e.target.value)}
           placeholder="https://youtube.com/watch?v=..."
+          disabled={loading}
           style={{
             flex: 1,
             background: 'transparent',
             border: 'none',
             outline: 'none',
-            color: 'var(--text)',
+            color: loading ? 'var(--muted)' : 'var(--text)',
             fontSize: '14px',
           }}
         />
@@ -73,21 +78,45 @@ export default function UrlInput({ onAnalyze }) {
             whiteSpace: 'nowrap',
           }}
         >
-          {loading ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : null}
-          {loading ? 'Analyzing...' : 'Analyze →'}
+          {loading && <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />}
+          {loading ? 'Working...' : 'Analyze →'}
         </button>
       </form>
+
+      {/* Live step indicator */}
+      {loading && step && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '8px',
+          justifyContent: 'center', marginTop: '12px',
+        }}>
+          <span style={{
+            width: '7px', height: '7px', borderRadius: '50%',
+            background: 'var(--orange)',
+            display: 'inline-block',
+            animation: 'pulse 1.2s ease-in-out infinite',
+          }} />
+          <p style={{ color: 'var(--orange-text)', fontSize: '13px', fontWeight: 500 }}>
+            {step}
+          </p>
+        </div>
+      )}
+
       {error && (
         <p style={{ textAlign: 'center', color: '#f87171', fontSize: '12px', marginTop: '10px' }}>
           {error}
         </p>
       )}
-      {!error && (
+
+      {!loading && !error && (
         <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: '12px', marginTop: '10px' }}>
           Try a tutorial, lecture, podcast, or talk.
         </p>
       )}
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } }
+      `}</style>
     </div>
   )
 }

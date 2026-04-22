@@ -16,7 +16,8 @@ export default function App() {
       .catch(() => {})
   }, [])
 
-  async function handleAnalyze(url) {
+  async function handleAnalyze(url, onProgress) {
+    // Start the job — returns immediately with job_id
     const res = await fetch(`${API_BASE}/api/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -26,13 +27,37 @@ export default function App() {
     const data = text ? JSON.parse(text) : {}
     if (!res.ok) throw new Error(data.detail || `Server error ${res.status}`)
 
-    const newSession = {
-      session_id: data.session_id,
-      title: data.title,
-      created_at: new Date().toISOString(),
-    }
-    setSessions(prev => [newSession, ...prev])
-    setActiveSession(newSession)
+    const { job_id } = data
+
+    // Poll /api/status every 2 seconds until done or error
+    return new Promise((resolve, reject) => {
+      const interval = setInterval(async () => {
+        try {
+          const statusRes = await fetch(`${API_BASE}/api/status/${job_id}`)
+          const job = await statusRes.json()
+
+          if (onProgress) onProgress(job.step)
+
+          if (job.status === 'done') {
+            clearInterval(interval)
+            const newSession = {
+              session_id: job.session_id,
+              title: job.title,
+              created_at: new Date().toISOString(),
+            }
+            setSessions(prev => [newSession, ...prev])
+            setActiveSession(newSession)
+            resolve()
+          } else if (job.status === 'error') {
+            clearInterval(interval)
+            reject(new Error(job.error || 'Analysis failed'))
+          }
+        } catch (err) {
+          clearInterval(interval)
+          reject(err)
+        }
+      }, 2000)
+    })
   }
 
   function handleSelectSession(sessionId) {

@@ -1,13 +1,14 @@
 import os
 import uuid
+import threading
 from datetime import datetime
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
 
-from models import AnalyzeRequest, AnalyzeResponse, AskRequest, AskResponse, SessionInfo
+from models import AnalyzeRequest, AskRequest, AskResponse, SessionInfo
 from downloader import download_audio
 from transcriber import transcribe_audio
 from qa_chain import QABot
@@ -24,8 +25,44 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory session store
+# In-memory stores
 _sessions: dict[str, dict] = {}
+_jobs: dict[str, dict] = {}  # job_id → {status, session_id, title, error, step}
+
+
+def _run_analyze(job_id: str, url: str):
+    try:
+        _jobs[job_id]["step"] = "Downloading audio..."
+        audio_path, title = download_audio(url)
+
+        _jobs[job_id]["step"] = "Transcribing with Whisper..."
+        transcript = transcribe_audio(audio_path)
+
+        session_id = str(uuid.uuid4())
+
+        _jobs[job_id]["step"] = "Building vector index..."
+        bot = QABot(transcript=transcript, session_id=session_id)
+
+        _sessions[session_id] = {
+            "bot": bot,
+            "title": title,
+            "created_at": datetime.utcnow().isoformat(),
+            "transcript_length": len(transcript),
+        }
+
+        _jobs[job_id].update({
+            "status": "done",
+            "session_id": session_id,
+            "title": title,
+            "step": "Ready",
+        })
+
+    except Exception as e:
+        _jobs[job_id].update({
+            "status": "error",
+            "error": str(e),
+            "step": "Failed",
+        })
 
 
 @app.get("/api/health")
@@ -33,39 +70,26 @@ def health():
     return {"status": "ok"}
 
 
-@app.post("/api/analyze", response_model=AnalyzeResponse)
-def analyze(req: AnalyzeRequest):
-    try:
-        audio_path, title = download_audio(req.url)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Download failed: {e}")
-
-    try:
-        transcript = transcribe_audio(audio_path)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Transcription failed: {e}")
-
-    session_id = str(uuid.uuid4())
-
-    try:
-        bot = QABot(transcript=transcript, session_id=session_id)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to build Q&A chain: {e}")
-
-    _sessions[session_id] = {
-        "bot": bot,
-        "title": title,
-        "created_at": datetime.utcnow().isoformat(),
-        "transcript_length": len(transcript),
+@app.post("/api/analyze")
+def analyze(req: AnalyzeRequest, background_tasks: BackgroundTasks):
+    job_id = str(uuid.uuid4())
+    _jobs[job_id] = {
+        "status": "processing",
+        "step": "Starting...",
+        "session_id": None,
+        "title": None,
+        "error": None,
     }
+    background_tasks.add_task(_run_analyze, job_id, req.url)
+    return {"job_id": job_id, "status": "processing"}
 
-    return AnalyzeResponse(
-        session_id=session_id,
-        title=title,
-        transcript_length=len(transcript),
-    )
+
+@app.get("/api/status/{job_id}")
+def job_status(job_id: str):
+    job = _jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
 
 
 @app.post("/api/ask", response_model=AskResponse)

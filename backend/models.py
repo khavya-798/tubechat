@@ -5,12 +5,6 @@ class AnalyzeRequest(BaseModel):
     url: str
 
 
-class AnalyzeResponse(BaseModel):
-    session_id: str
-    title: str
-    transcript_length: int
-
-
 class AskRequest(BaseModel):
     session_id: str
     question: str
