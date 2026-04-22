@@ -1,0 +1,69 @@
+# ── Environment variables (NEVER commit these) ────────────────────────────────
+.env
+.env.local
+.env.production
+.env.*.local
+backend/.env
+frontend/.env
+frontend/.env.production
+
+# ── Claude Code ───────────────────────────────────────────────────────────────
+.claude/
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+*.egg
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+backend/venv/
+backend/.venv/
+
+# ── Downloaded audio & transcription cache ───────────────────────────────────
+audio/
+*.mp3
+*.m4a
+*.wav
+*.mp3.txt
+*.m4a.txt
+
+# ── FAISS vector store (regeneratable) ───────────────────────────────────────
+faiss_index/
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+uvicorn_test.log
+
+# ── Node / Frontend ───────────────────────────────────────────────────────────
+node_modules/
+frontend/dist/
+frontend/.cache/
+.npm/
+
+# ── IDEs ─────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+*.bak
+*.tmp
