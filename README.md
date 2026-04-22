@@ -171,9 +171,4 @@ Frontend runs at `http://localhost:5173`
 
 ---
 
-## Built By
 
-**Khavyanjali Gopisetty**
-
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0a66c2?style=flat&logo=linkedin)](https://www.linkedin.com/in/khavyanjali-gopisetty-019720254/)
-[![GitHub](https://img.shields.io/badge/GitHub-khavya--798-181717?style=flat&logo=github)](https://github.com/khavya-798)
