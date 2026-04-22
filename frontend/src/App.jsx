@@ -10,6 +10,8 @@ export default function App() {
   const [activeSession, setActiveSession] = useState(null)
 
   useEffect(() => {
+    // Wake the backend (F1 tier sleeps after inactivity)
+    fetch(`${API_BASE}/api/health`).catch(() => {})
     fetch(`${API_BASE}/api/sessions`)
       .then(r => r.json())
       .then(setSessions)
