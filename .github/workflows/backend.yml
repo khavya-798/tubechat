@@ -24,7 +24,7 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Zip backend folder
-        run: zip -r backend.zip ./backend
+        run: cd backend && zip -r ../backend.zip .
 
       - name: Deploy via Azure CLI
         run: |
