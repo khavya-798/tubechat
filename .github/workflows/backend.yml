@@ -23,9 +23,6 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Install dependencies into package folder
-        run: pip install -r backend/requirements.txt --target backend/.python_packages/lib/site-packages
-
       - name: Zip backend folder
         run: cd backend && zip -r ../backend.zip .
 
