@@ -6,7 +6,10 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 
-load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+try:
+    load_dotenv() 
+except:
+    pass
 
 from models import AnalyzeRequest, AskRequest, AskResponse, SessionInfo
 from downloader import download_audio
@@ -15,7 +18,7 @@ from qa_chain import QABot
 
 app = FastAPI(title="Tubechat API")
 
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
 app.add_middleware(
     CORSMiddleware,
